@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 899be4c3bb1ceb34280c295ad39797d6, type: 3}
+  m_Name: GunProjectilesList
+  m_EditorClassIdentifier: 
+  _Elements:
+  - <Type>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 5678039157814473043, guid: b74858d9009a6da4daa01a63df5d955c, type: 3}

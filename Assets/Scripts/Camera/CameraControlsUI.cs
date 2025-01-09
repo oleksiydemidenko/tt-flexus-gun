@@ -1,11 +1,20 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Zenject;
 
-public class CameraControlsUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerMoveHandler
+public class CameraControlsUI : MonoBehaviour, IPointerDownHandler, 
+    IPointerUpHandler, IPointerMoveHandler
 {
     [SerializeField] private Canvas _Canvas;
-    [SerializeField] private CameraControls _CameraControls;
+    
+    private CameraControls _cameraControls;
     private bool _allowMove;
+
+    [Inject]
+    private void Construct(CameraControls cameraControls)
+    {
+        _cameraControls = cameraControls;
+    }
 
     public void OnPointerDown(PointerEventData eventData)
     {
@@ -15,7 +24,7 @@ public class CameraControlsUI : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     public void OnPointerMove(PointerEventData eventData)
     {
         if(!_allowMove) return;
-        _CameraControls.RotateHorizontal(eventData.delta.x * _Canvas.scaleFactor);
+       _cameraControls.RotateHorizontal(eventData.delta.x * _Canvas.scaleFactor);
     }
 
     public void OnPointerUp(PointerEventData eventData)

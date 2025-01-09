@@ -10,7 +10,6 @@ public class GunTrajectory : MonoBehaviour
     public int TrajectoryWayPointsCount => _LineRenderer.positionCount;
     public LineRenderer LineRenderer => _LineRenderer;
     
-    private Vector3 _gravityStep;
 
     public void SetPower(float value)
     {
@@ -22,12 +21,13 @@ public class GunTrajectory : MonoBehaviour
         var startPosition = _BarrelSart.position;
         var endPosition = startPosition + Power * _Barrel.forward;
 
-        float iF = 0f;
+        var iF = 0f;
+        var gravityStep = Vector3.zero;
         for (var i = 0; i < _LineRenderer.positionCount; i++)
         {
             var progress = iF++ / _LineRenderer.positionCount;
-            _gravityStep.y = -Power;
-            var gravity = progress * progress * _gravityStep;
+            gravityStep.y = -Power;
+            var gravity = progress * progress * gravityStep;
             _LineRenderer.SetPosition(i, Vector3.Lerp(startPosition, endPosition, progress) + gravity);
         }
     }

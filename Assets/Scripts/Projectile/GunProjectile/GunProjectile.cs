@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class GunProjectile : MonoBehaviour, IPoolInstance<GunProjectile, GunProjectileType>
@@ -7,6 +6,9 @@ public class GunProjectile : MonoBehaviour, IPoolInstance<GunProjectile, GunProj
     [SerializeField] private float _Speed = 1;
     [SerializeField] private float _SmoothSpeed = 24;
     [SerializeField] private LayerMask _RayMask;
+    [SerializeField] private float _RayLength = 0.5f;
+    [SerializeField] private ParticlesType _DetonateParticlesType;
+    [SerializeField] private float[] _Ricochets;
 
     public GunProjectileType Type { get; set; }
     public GunProjectile MonoInstance { get; set; }
@@ -14,10 +16,13 @@ public class GunProjectile : MonoBehaviour, IPoolInstance<GunProjectile, GunProj
     public bool IsMoving { get; private set; }
 
     private Vector3 _lastPosition;
-    private Mesh _cubeMesh;
-    private Vector3[] _vertices = new Vector3[0];
-    private Vector3[] _wayPoints = new Vector3[0];
+    private Vector3[] _waypoints = new Vector3[0];
     private float _moveT;
+    private MonoPool<Particles, ParticlesType> _particlesPool;
+    private Particles _particles;
+    private int _currentRicochet;
+    private int _currentVertIndex;
+    private IMeshRandomizer _meshRandomizer;
 
     public void ReusePoolInstance()
     {
@@ -32,194 +37,119 @@ public class GunProjectile : MonoBehaviour, IPoolInstance<GunProjectile, GunProj
 
     private void Update() 
     {
-        UpdateMovement();
+        WaypointsMovement();
     }
 
-    private void UpdateMovement()
+    private void WaypointsMovement()
     {
         if (!IsMoving) return;
 
+        _lastPosition = transform.position;
         var dT = Time.deltaTime;
-        _moveT += dT * _Speed;
-        var vertIndex = (int)(_moveT * _wayPoints.Length);
-        if (_wayPoints.Length > 1)
-        {
-            if (vertIndex >= _wayPoints.Length) vertIndex = _wayPoints.Length - 1;
-            transform.position -= dT * _SmoothSpeed 
-                * (transform.position - _wayPoints[vertIndex]);
-        }
         
         if (_moveT > 1f)
         {
             Detonate();
             IsMoving = false;
         }
+        else
+        {
+            _moveT += dT * _Speed;
+            _currentVertIndex = (int)(_moveT * _waypoints.Length);
+            if (_waypoints.Length > 1)
+            {
+                if (_currentVertIndex >= _waypoints.Length) _currentVertIndex = _waypoints.Length - 1;
+                transform.position -= dT * _SmoothSpeed 
+                    * (transform.position - _waypoints[_currentVertIndex]);
+            }
+        }
+
+        CheckHit();
     }
 
-    private void LateUpdate()
+    private void CheckHit()
     {
-        _lastPosition = transform.position;
+        var velocity = transform.position - _lastPosition;
+        var rayDirection = velocity.normalized 
+            * Vector3.Distance(_lastPosition, _waypoints[_currentVertIndex]);
+
+        Debug.DrawRay(_lastPosition, rayDirection, Color.red);
+        Debug.DrawRay(_lastPosition + rayDirection, rayDirection * 0.1f, Color.green);
+
+        if (Physics.Linecast(_lastPosition, _waypoints[_currentVertIndex], 
+            out var hit, _RayMask))
+        {
+            GunProjectileEvents.Hit.Invoke(this, hit);
+            if (_currentRicochet == _Ricochets.Length)
+            {
+                Detonate();
+                _particles.transform.SetPositionAndRotation(hit.point,
+                    Quaternion.LookRotation(hit.normal, Vector3.up));
+            }
+            else CalculateRicochet(velocity, hit);
+        }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void CalculateRicochet(Vector3 velocity, RaycastHit hit)
     {
-        Detonate();
+        var reflectVelocity = Vector3.Reflect(velocity, hit.normal) 
+            * _Ricochets[_currentRicochet];
+        var startPosition = transform.position;
+        var endPosition = startPosition + reflectVelocity;
+
+        float iF = 0f;
+        var gravityStep = Vector3.zero;
+        var count = _waypoints.Length;
+        for (var i = 0; i < count; i++)
+        {
+            var progress = iF++ / count;
+            gravityStep.y = -reflectVelocity.magnitude;
+            var gravity = progress * progress * gravityStep;
+            _waypoints[i] = Vector3.Lerp(startPosition, endPosition, progress) + gravity;
+        }
+
+        _moveT = 0;
+        _currentRicochet++;
+        transform.position = startPosition;
+
+        _meshRandomizer.Randomize(_MeshFilter.mesh);
     }
 
     private void Detonate()
     {
-        var velocity = transform.position - _lastPosition;
-        if (Physics.Raycast(_lastPosition, velocity.normalized, 
-            out var hit, 10, _RayMask))
-        {
-            Debug.Log(hit.collider.gameObject.name);
-        }
         Deactivate();
+        _particles = _particlesPool.Get(_DetonateParticlesType);
+        _particles.transform.position = transform.position;
+        _particles.Play();
+        _currentRicochet = 0;
+        IsMoving = false;
     }
 
-    public void SetWayPointsFromLineRenderer(LineRenderer lineRenderer)
+    public void SetParticlesPool(MonoPool<Particles, ParticlesType> particlesPool)
+        => _particlesPool = particlesPool;
+    public void SetWaypointsFromLineRenderer(LineRenderer lineRenderer)
     {
         var pointsCount = lineRenderer.positionCount;
-        if (_wayPoints.Length != pointsCount) 
-            _wayPoints = new Vector3[pointsCount];
+        if (_waypoints.Length != pointsCount) 
+            _waypoints = new Vector3[pointsCount];
 
-        lineRenderer.GetPositions(_wayPoints);
+        lineRenderer.GetPositions(_waypoints);
     }
-    public void StartMove(float speed)
+    public void StartMoveWaypoints(float speed)
     {
         _moveT = 0;
-        transform.position = _wayPoints[0];
+        transform.position = _waypoints[0];
         IsMoving = true;
         _Speed = speed;
+        _meshRandomizer.Randomize(_MeshFilter.mesh);
     }
-    public void InitializeMesh()
+
+    public void SetMesh(Mesh mesh)
     {
-        _cubeMesh = new Mesh();
-        var vertices = new Vector3[] 
-        {
-            //F
-            new (-1, -1,  1),
-            new ( 1, -1,  1),
-            new ( 1,  1,  1),
-            new (-1,  1,  1),
-
-            //B
-            new (-1, -1, -1),
-            new ( 1, -1, -1),
-            new ( 1,  1, -1),
-            new (-1,  1, -1),
-
-            //U
-            new (-1,  1,  1),
-            new ( 1,  1,  1),
-            new ( 1,  1, -1),
-            new (-1,  1, -1),
-
-            //D
-            new (-1, -1,  1),
-            new ( 1, -1,  1),
-            new ( 1, -1, -1),
-            new (-1, -1, -1),
-
-            //R
-            new ( 1, -1,  1),
-            new ( 1,  1,  1),
-            new ( 1,  1, -1),
-            new ( 1, -1, -1),
-
-            //L
-            new (-1, -1,  1),
-            new (-1,  1,  1),
-            new (-1,  1, -1),
-            new (-1, -1, -1)
-        };
-        
-        _vertices = new Vector3[vertices.Length];
-        Array.Copy(vertices, _vertices, vertices.Length);
-
-        var triangles = new int[] 
-        {
-            0, 1, 2,
-            2, 3, 0,
-
-            7, 5, 4,
-            6, 5, 7,
-
-            8, 9,  10,
-            8,  10,  11,
-
-            12,  14,  13,
-            12,  15,  14,
-
-            16,  18,  17,
-            16,  19,  18,
-
-            20, 21, 22,
-            20, 22, 23
-        };
-
-        var uv = new Vector2[] 
-        {
-            Vector2.zero, Vector2.right, Vector2.one, Vector2.up,
-            Vector2.right, Vector2.zero, Vector2.up, Vector2.one,
-            Vector2.zero, Vector2.right, Vector2.one, Vector2.up,
-            Vector2.zero, Vector2.right, Vector2.one, Vector2.up,
-            Vector2.zero, Vector2.right, Vector2.one, Vector2.up,
-            Vector2.zero, Vector2.right, Vector2.one, Vector2.up
-        };
-
-        _cubeMesh.vertices = vertices;
-        _cubeMesh.triangles = triangles;
-        _cubeMesh.uv = uv;
-        _cubeMesh.RecalculateNormals();
-        _cubeMesh.RecalculateBounds();
-        _MeshFilter.mesh = _cubeMesh;
+        _MeshFilter.mesh = mesh;
     }
-    public void RandomizeMesh()
+    public void SetMeshRandomizer(IMeshRandomizer meshRandomizer)
     {
-        var verts = _cubeMesh.vertices;
-        var rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[0] = _vertices[0] + rand;
-        verts[12] = _vertices[12] + rand;
-        verts[20] = _vertices[20] + rand;
-
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[1] = _vertices[1] + rand;
-        verts[13] = _vertices[13] + rand;
-        verts[16] = _vertices[16] + rand;
-        
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[4] = _vertices[4] + rand;
-        verts[15] = _vertices[15] + rand;
-        verts[23] = _vertices[23] + rand;
-        
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[5] = _vertices[5] + rand;
-        verts[14] = _vertices[14] + rand;
-        verts[19] = _vertices[19] + rand;
-        
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[7] = _vertices[7] + rand;
-        verts[11] = _vertices[11] + rand;
-        verts[22] = _vertices[22] + rand;
-        
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[6] = _vertices[6] + rand;
-        verts[10] = _vertices[10] + rand;
-        verts[18] = _vertices[18] + rand;
-        
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[3] = _vertices[3] + rand;
-        verts[8] = _vertices[8] + rand;
-        verts[21] = _vertices[21] + rand;
-        
-        rand = UnityEngine.Random.insideUnitSphere * 0.25f;
-        verts[2] = _vertices[2] + rand;
-        verts[9] = _vertices[9] + rand;
-        verts[17] = _vertices[17] + rand;
-
-        _cubeMesh.vertices = verts;
-        _cubeMesh.RecalculateNormals();
-        _cubeMesh.RecalculateBounds();
+        _meshRandomizer = meshRandomizer;
     }
 }

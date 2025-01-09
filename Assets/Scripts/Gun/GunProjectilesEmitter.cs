@@ -1,19 +1,22 @@
 using UnityEngine;
+using Zenject;
 
 public class GunProjectilesEmitter : MonoBehaviour
 {
-    [SerializeField] private GunProjectilesList _GunProjectilesList;
     [SerializeField] private GunTrajectory _GunTrajectory;
     [SerializeField, Tooltip("Meters per second")] private float _ProjectileSpeed = 3f;
     [SerializeField] private float _PowerAddProjectileSpeed = 0.01f;
+    private MonoPool<GunProjectile, GunProjectileType> _projectilesPool;
+    private MonoPool<Particles, ParticlesType> _particlesPool;
 
     public float TrajectoryPower => _GunTrajectory.Power;
 
-    private MonoPool<GunProjectile, GunProjectileType> _projectilesPool;
-
-    private void Awake() 
-    {    
-        _projectilesPool = new (new GunProjectilesFactory(_GunProjectilesList));
+    [Inject]
+    private void Construct(MonoPool<GunProjectile, GunProjectileType> projectilesPool,
+        MonoPool<Particles, ParticlesType> particlesPool)
+    {
+        _projectilesPool = projectilesPool;
+        _particlesPool = particlesPool;
     }
 
     public void Emit(GunProjectileType type)
@@ -22,12 +25,12 @@ public class GunProjectilesEmitter : MonoBehaviour
         if (power <= 0) return;
 
         var projectile = _projectilesPool.Get(type);
-        projectile.RandomizeMesh();
-        projectile.SetWayPointsFromLineRenderer(_GunTrajectory.LineRenderer);
+        projectile.SetWaypointsFromLineRenderer(_GunTrajectory.LineRenderer);
+        projectile.SetParticlesPool(_particlesPool);
 
         var projectileSpeed = _ProjectileSpeed / power
             + power * _PowerAddProjectileSpeed;
-        projectile.StartMove(projectileSpeed);
+        projectile.StartMoveWaypoints(projectileSpeed);
 
         GunEvents.ProjectileEmitted.Invoke(this, projectile);
     }

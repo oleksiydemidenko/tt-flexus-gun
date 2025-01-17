@@ -6,7 +6,6 @@ public class GunProjectile : MonoBehaviour, IPoolInstance<GunProjectile, GunProj
     [SerializeField] private float _Speed = 1;
     [SerializeField] private float _SmoothSpeed = 24;
     [SerializeField] private LayerMask _RayMask;
-    [SerializeField] private float _RayLength = 0.5f;
     [SerializeField] private ParticlesType _DetonateParticlesType;
     [SerializeField] private float[] _Ricochets;
 
@@ -94,7 +93,7 @@ public class GunProjectile : MonoBehaviour, IPoolInstance<GunProjectile, GunProj
     {
         var reflectVelocity = Vector3.Reflect(velocity, hit.normal) 
             * _Ricochets[_currentRicochet];
-        var startPosition = transform.position;
+        var startPosition = hit.point;
         var endPosition = startPosition + reflectVelocity;
 
         float iF = 0f;

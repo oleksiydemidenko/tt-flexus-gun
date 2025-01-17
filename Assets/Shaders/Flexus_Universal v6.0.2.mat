@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Flexus_Universal v6.0.2
+  m_Shader: {fileID: 4800000, guid: 39abc2149b5dc48428b347cbf4f0798e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - DEBUG_MODE_FINAL_RENDER
+  - LIGHT_MODE_LAMBERT
+  - UNIVERSAL_HD
+  - USE_CUBEMAP_DISABLED
+  - USE_GLOW
+  - USE_GRADIENT_FRESNEL
+  - USE_SPECULAR
+  - UV_MODE_MODEL_UV
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: _Color2
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Cubemap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RoughnessTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - DEBUG_MODE: 0
+    - LIGHT_MODE: 0
+    - USE_CUBEMAP: 0
+    - USE_GRADIENT: 1
+    - UV_MODE: 0
+    - _AlbedoAlphaIsOcclusion: 0
+    - _Brightness: 1.05
+    - _CubemapPower: 1
+    - _DickSize: 27
+    - _DstBlend: 0
+    - _EmissionMultiplier: 1
+    - _GlowPower: 2.56
+    - _NorAlphaIsRoughness: 0
+    - _NorBlueIsNonmetallic: 0
+    - _NormalFlipY: 0
+    - _OutlineScale: 0.001
+    - _Roughness: 0.46
+    - _Saturation: 0.619
+    - _SpecularMultiplier: 1.13
+    - _SrcBlend: 1
+    - _TestTextures: 0
+    - _UniversalHD: 1
+    - _UseAlpha: 0
+    - _UseCC: 0
+    - _UseEmissionTex: 0
+    - _UseGlow: 1
+    - _UseNormalMap: 0
+    - _UseSpecular: 1
+    - _UseTexture: 0
+    m_Colors:
+    - _Color: {r: 1, g: 0, b: 0.020755768, a: 1}
+    - _Color2: {r: 0, g: 0.089374304, b: 1, a: 1}
+    - _CubemapColor: {r: 1, g: 1, b: 1, a: 1}
+    - _GlowColor: {r: 1, g: 0, b: 0.8796072, a: 1}
+    - _GradientSettings: {r: 1, g: 0, b: 0, a: 0}
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
